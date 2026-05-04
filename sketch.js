@@ -12,9 +12,16 @@ function setup() {
   // 建立全螢幕畫布
   createCanvas(windowWidth, windowHeight);
   
-  // 擷取攝影機影像
-  video = createCapture(VIDEO);
+  // 修正手機支援：強制使用前鏡頭並防止 iOS 自動跳轉全螢幕播放
+  let constraints = {
+    video: {
+      facingMode: "user"
+    },
+    audio: false
+  };
+  video = createCapture(constraints);
   video.size(640, 480);
+  video.elt.setAttribute('playsinline', ''); // 關鍵：防止 iOS 播放影片時自動全螢幕
   video.hide();
   
   // 開始辨識臉部偵測
@@ -42,7 +49,8 @@ function draw() {
   // 在中間顯示影像 (位移 -dw/2, -dh/2 以置中)
   image(video, -dw / 2, -dh / 2, dw, dh);
   
-  if (faces.length > 0) {
+  // 確保影片寬度大於 0 (已加載) 且偵測到臉部
+  if (faces.length > 0 && video.width > 0) {
     let face = faces[0];
 
     // 臉部最外層輪廓點位 (用於遮罩和描邊)
@@ -63,11 +71,7 @@ function draw() {
     fill(255); // 任意顏色，因為會被挖空
     drawFilledShape(face, faceOval, dw, dh); // 繪製臉部外輪廓的實心形狀
     pop(); // 恢復之前的繪圖狀態和混合模式
-  }
 
-  // 繪製臉部特徵線條
-  if (faces.length > 0) {
-    let face = faces[0];
     stroke(255, 0, 0); // 線條紅色
     strokeWeight(1);   // 粗細為 1
     noFill();
