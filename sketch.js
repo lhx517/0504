@@ -1,11 +1,15 @@
 let faceMesh;
 let video;
 let faces = [];
-let options = { maxFaces: 1, refineLandmarks: false, flipHorizontal: false };
+let options = { maxFaces: 1, refineLandmarks: false, flipHorizontal: true };
+let isModelLoaded = false;
 
 function preload() {
-  // 注意：ml5 v1 使用 faceMesh (M 大寫)
-  faceMesh = ml5.faceMesh(options);
+  // 在 preload 中載入模型，並加入回呼函式確認
+  faceMesh = ml5.faceMesh(options, () => {
+    console.log("模型已準備就緒！");
+    isModelLoaded = true;
+  });
 }
 
 function setup() {
@@ -15,31 +19,37 @@ function setup() {
   video.size(640, 480);
   video.hide();
 
-  // 開始偵測人臉
+  // 確認 video 載入後再開始偵測
   faceMesh.detectStart(video, gotFaces);
 }
 
 function draw() {
+  background(220); // 先畫背景，防止畫面殘留
+
   // 1. 畫出視訊畫面
-  image(video, 0, 0, width, height);
+  if (video) {
+    image(video, 0, 0, width, height);
+  }
 
   // 2. 繪製偵測結果（加上安全檢查，防止 faces 為空時白屏）
   if (faces && faces.length > 0) {
     let face = faces[0];
-    
-    // 繪製關鍵點範例
     noStroke();
     fill(0, 255, 0);
     for (let i = 0; i < face.keypoints.length; i++) {
       let keypoint = face.keypoints[i];
       circle(keypoint.x, keypoint.y, 5);
     }
-  } else {
-    // 如果沒偵測到人臉，可以在畫面上顯示提示，避免看起來像當機
-    fill(255, 0, 0);
+  }
+
+  // 3. 顯示狀態提示
+  if (!isModelLoaded) {
+    fill(255);
+    rect(0, 0, width, height);
+    fill(0);
     textSize(16);
     textAlign(CENTER);
-    text("正在等待人臉偵測...", width / 2, height - 20);
+    text("模型載入中，請稍候...", width / 2, height / 2);
   }
 }
 
